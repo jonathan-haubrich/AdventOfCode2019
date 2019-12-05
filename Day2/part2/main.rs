@@ -17,11 +17,11 @@ fn main() {
         .map(|s| { s.parse().unwrap() })
         .collect();
 
-    let mut pc = 0;
     let target = 19690720;
     for i in 0..100 {
         for j in 0..100 {
             let mut opcodes = mem.to_vec();
+            let mut pc = 0;
             opcodes[1] = i;
             opcodes[2] = j;
                 loop {
@@ -36,7 +36,6 @@ fn main() {
                             opcodes[index] = opcodes[op1] * opcodes[op2]
                         },
                         99 => {
-                            println!("{}", opcodes[0]);
                             if opcodes[0] == target {
                                 println!("{:?}", opcodes);
                             }

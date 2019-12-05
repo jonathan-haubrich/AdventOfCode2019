@@ -1,3 +1,5 @@
 main
 *.txt
 .*.swp
+.*target/*
+target
