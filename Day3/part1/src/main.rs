@@ -87,6 +87,15 @@ fn main() {
     }
 
     println!("{}", min_distance);
+
+    let l1 = Line{ p1:Coord{ x:1, y:1 }, p2:Coord{ x:1, y:4 } };
+    let l2 = Line{ p1:Coord{ x:0, y:2 }, p2:Coord{ x:4, y:2 } };
+    let l3 = Line{ p1:Coord{ x:2, y:-3}, p2:Coord{ x:2, y:-1} };
+    
+    println!("{:?}", l1.is_vertical());
+    println!("{:?}", l2.is_horizontal());
+    println!("{:?}", l1.intersects(&l2));
+    println!("{:?}", l1.intersects(&l3));
     
 }
 
@@ -96,8 +105,15 @@ fn find_intersections(wire1: &Wire, wire2: &Wire) -> Vec<Coord> {
                    
     for lines1 in &wire1.path {
         for lines2 in &wire2.path {
-            if get_intersection(&lines1, &lines2, &mut intersection) {
+            if lines1.intersects(&lines2) {
 //                println!("{:?} {:?} {:?}", lines1, lines2, intersection);
+                if lines1.is_horizontal() {
+                    intersection.y = lines1.p1.y;
+                    intersection.x = lines2.p1.x;
+                } else {
+                    intersection.y = lines2.p1.y;
+                    intersection.x = lines1.p1.x;
+                }
                 intersections.push(intersection);
             }
         }
@@ -195,6 +211,32 @@ impl Line {
         let lines = [&self, other];
         if lines.iter().all(|&l| l.is_vertical())
             || lines.iter().all(|&l| l.is_horizontal()) {
+            return false;
+        }
+
+        let vertical = if self.is_vertical() {
+            &self
+        } else {
+            &other
+        };
+
+        let horizontal = if self.is_horizontal() {
+            &self
+        } else {
+            &other
+        };
+
+        let vertical_min_y = cmp::min(vertical.p1.y, vertical.p2.y);
+        let vertical_max_y = cmp::max(vertical.p1.y, vertical.p2.y);
+
+        let horizontal_min_x = cmp::min(horizontal.p1.x, horizontal.p2.x);
+        let horizontal_max_x = cmp::max(horizontal.p1.x, horizontal.p2.x);
+
+        if vertical_min_y > horizontal.p1.y || vertical_max_y < horizontal.p1.y {
+            return false;
+        }
+
+        if horizontal_min_x > vertical.p1.x || horizontal_max_x < vertical.p1.x {
             return false;
         }
 
