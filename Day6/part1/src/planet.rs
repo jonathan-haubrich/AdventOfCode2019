@@ -1,8 +1,10 @@
+use std::cell::{RefCell, RefMut};
 
-pub struct Planet<'a> {
-    name: &'a String,
-    orbits: Option<&'a Planet<'a>>,
-//    orbited_by: Vec<&'b Planet<'a>>
+#[derive(Debug, Clone)]
+pub struct Planet {
+    pub name: String,
+    orbits: Option<RefCell<Box<Planet>>>,
+    orbited_by: Vec<RefCell<Box<Planet>>>
 }
 
 /*
@@ -16,11 +18,26 @@ impl<'a> Planet<'a> {
 }
 */
 
-impl<'a> Planet<'a> {
-    pub fn new(name: &'a String, orbits: Option<&'a Planet<'a>>) -> Planet<'a> {
+impl Planet {
+    pub fn new(name: &str, orbits: Option<RefCell<Box<Planet>>>) -> Planet {
         Planet {
-            name,
-            orbits
+            name: name.to_string(),
+            orbits,
+            orbited_by: Vec::new()
         }
+    }
+
+    pub fn add_orbiter(mut planet: RefMut<Box<Planet>>, orbiter: RefCell<Box<Planet>>) {
+        planet.orbited_by.push(orbiter);
+    }
+
+    pub fn orbit(mut planet: RefMut<Box<Planet>>, center: RefCell<Box<Planet>>) {
+        planet.orbits = Some(center);
+    }
+}
+
+impl PartialEq for Planet {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
     }
 }
