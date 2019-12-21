@@ -1,5 +1,3 @@
-main
-*.txt
-.*.swp
-.*target/*
-target
+planets.data
+.*.sw*
+*/*/target/

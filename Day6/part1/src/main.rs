@@ -1,6 +1,4 @@
-use std::boxed::{Box};
-use std::cell::{RefCell};
-use std::collections::{HashMap};
+use std::collections::{HashMap, VecDeque};
 use std::env;
 use std::fs;
 use std::io::{BufReader, prelude::*};
@@ -21,7 +19,7 @@ fn main() {
     let file = fs::File::open(&args[1]).unwrap();
     let file = BufReader::new(file);
 
-    let mut planets: HashMap<String, RefCell<Box<Planet>>> = HashMap::new();
+    let mut planets: HashMap<String, RefCell<Planet>> = HashMap::new();
 
     let names: Vec<(String, String)> = file.lines().map(|s| {
         let names: Vec<String> = s.unwrap()
@@ -32,28 +30,46 @@ fn main() {
         (names[0].clone(), names[1].clone())})
         .collect();
 
-    for (name1, name2) in names {
-
-        let p1 = match planets.get(&name1) {
-            Some(p) => p.clone(),
-            None => RefCell::new(Box::new(Planet::new(&name1, None)))
-        };
-
-        let p2 = match planets.get(&name2) {
-            Some(p) => p.clone(),
-            None => RefCell::new(Box::new(Planet::new(&name2, None)))
-        };
-
-        Planet::add_orbiter(p1.borrow_mut(), p2.clone());
-        Planet::orbit(p2.borrow_mut(), p1.clone());
-
-        planets.insert(name1.clone(), p1.clone());
-        planets.insert(name2.clone(), p2.clone());
+    for (name1, name2) in &names {
+        planets.insert(name1.to_owned(), RefCell::new(Planet::new(name1, None)));
+        planets.insert(name2.to_owned(), RefCell::new(Planet::new(name2, None)));
     }
 
-//    for line in lines {
+    for (name1, name2) in &names {
+        let p1 = planets.get(name1).unwrap();
+        let p2 = planets.get(name2).unwrap();
 
+        Planet::add_orbiter(&mut *p1.borrow_mut(), p2.borrow().name.clone());
+        Planet::orbit(&mut *p2.borrow_mut(), p1.borrow().name.clone());
+    }
 
-    println!("{:#?}", planets);
+    let mut direct = 0;
+    let mut indirect = 0;
 
+    let com = planets.get("COM").unwrap().borrow();
+
+    let mut queue: VecDeque<String> = VecDeque::new();
+
+    queue.push_back(com.name.clone());
+
+    loop {
+        match queue.pop_front() {
+            Some(name) => {
+                match planets.get(&name) {
+                    Some(planet) => {
+                        let p = planet.borrow();
+                        for orbiter in &p.orbited_by {
+                            queue.push_back(orbiter.clone());
+                            direct += 1;
+                        }
+                        indirect += Planet::indirect_orbits(&*p, &planets);
+                    },
+                    None => break
+                }
+            },
+            None => break
+        };
+    }
+
+    println!("Direct: {} Indirect: {} Total: {}", direct, indirect, direct + indirect);
 }

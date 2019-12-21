@@ -1,10 +1,11 @@
 use std::cell::{RefCell, RefMut};
+use std::collections::{HashMap, VecDeque};
 
 #[derive(Debug, Clone)]
 pub struct Planet {
     pub name: String,
-    orbits: Option<RefCell<Box<Planet>>>,
-    orbited_by: Vec<RefCell<Box<Planet>>>
+    pub orbits: Option<String>,
+    pub orbited_by: Vec<String>
 }
 
 /*
@@ -19,7 +20,7 @@ impl<'a> Planet<'a> {
 */
 
 impl Planet {
-    pub fn new(name: &str, orbits: Option<RefCell<Box<Planet>>>) -> Planet {
+    pub fn new(name: &str, orbits: Option<String>) -> Planet {
         Planet {
             name: name.to_string(),
             orbits,
@@ -27,12 +28,41 @@ impl Planet {
         }
     }
 
-    pub fn add_orbiter(mut planet: RefMut<Box<Planet>>, orbiter: RefCell<Box<Planet>>) {
+    pub fn add_orbiter(planet: &mut Planet, orbiter: String) {
         planet.orbited_by.push(orbiter);
     }
 
-    pub fn orbit(mut planet: RefMut<Box<Planet>>, center: RefCell<Box<Planet>>) {
+    pub fn orbit(planet: &mut Planet, center: String) {
         planet.orbits = Some(center);
+    }
+
+    pub fn indirect_orbits(center: &Planet, planets: &HashMap<String, RefCell<Planet>>) -> usize {
+        let mut orbiters = VecDeque::new();
+        let mut indirect = 0;
+
+        for orbiter in &center.orbited_by {
+            orbiters.push_back(orbiter.clone());
+        }
+
+        loop {
+            match orbiters.pop_front() {
+                Some(name) => {
+                    match planets.get(&name) {
+                        Some(p) => {
+                            let planet = p.borrow();
+                            for orbiter in &planet.orbited_by {
+                                orbiters.push_back(orbiter.clone());
+                                indirect += 1;
+                            }
+                        },
+                        None => break
+                    };
+                },
+                None => break
+            }
+        }
+
+        indirect
     }
 }
 
