@@ -1,5 +1,5 @@
 use std::cell::{RefCell};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
 use std::io::{BufReader, prelude::*};
@@ -44,68 +44,51 @@ fn main() {
         Planet::orbit(&mut *p2.borrow_mut(), p1.borrow().name.clone());
     }
 
-    let com = planets.get("SAN").unwrap().borrow();
+    let mut path: HashSet<String> = HashSet::new();
+    let mut paths: Vec<HashSet<String>> = Vec::new();
+    let mut starts = Vec::new();
 
-    let mut next = VecDeque::new();
-    let mut path: VecDeque<String> = VecDeque::new();
-    let mut paths: Vec<VecDeque<String>> = Vec::new();
-    let mut visited = HashSet::new();
-    const TARGET: &str = "YOU";
-
-    next.push_back(com.name.clone());
-    path.push_front(com.name.clone());
-    visited.insert(com.name.clone());
-
-
-    loop {
-        match next.pop_front() {
-            Some(name) => {
-                visited.insert(name.clone());
-                path.push_front(name.clone());
-                if name == TARGET {
-                    paths.push(path.clone());
-                    path.pop_front();
-                    continue;
-                }
-
-                let mut pushed = 0;
-                match planets.get(&name) {
-                    Some(planet) => {
-                        let p = planet.borrow();
-                        match &p.orbits {
-                            Some(n) => {
-                                if !visited.contains(n) {
-                                    next.push_back(n.clone());
-                                    pushed += 1;
-                                }
-                            },
-                            None => {}
-                        };
-                        for orbiter in &p.orbited_by {
-                            if !visited.contains(orbiter) {
-                                next.push_back(orbiter.clone());
-                                pushed += 1;
-                            }
-                        }
-                        if pushed == 0 {
-                            path.pop_front();
-                        }
-                    },
-                    None => break
-                }
-            },
-            None => break
-        };
+    match planets.get("YOU") {
+        Some(p) => {
+            let planet = p.borrow();
+            match &planet.orbits {
+                Some(n) => {
+                    starts.push(n.clone());
+                },
+                None => {}
+            };
+        },
+        None => {}
     }
 
-    let mut shortest = !0;
+    starts.push(String::from("SAN"));
 
-    for i in 0..paths.len() {
-        if paths[i].len() < shortest {
-            shortest = i;
+    for start in starts {
+        path.clear();
+        let mut current: String = start.to_string();
+        loop {
+            match planets.get(&current) {
+                Some(p) => {
+                    let planet = p.borrow();
+                    match &planet.orbits {
+                        Some(n) => {
+                            path.insert(n.clone());
+                            current = n.clone();
+                        },
+                        None => {
+                            paths.push(path.clone());
+                            break;
+                        }
+                    };
+                },
+                None => break
+            }
         }
     }
 
-    println!("{:#?}", paths[shortest]);
-    println!("Hops: {}", paths[shortest].len() - 2);
+    let path_to_santa = &paths[1].symmetric_difference(&paths[0]).collect::<Vec<&String>>();
+
+    println!("{:#?}", path_to_santa);
+    // +1 because the path will contain a planet that is shared by both paths
+    println!("Hops: {}", path_to_santa.len() + 1);
 }
